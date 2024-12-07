@@ -3,12 +3,34 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { CoinbaseWalletSDK } from '@coinbase/wallet-sdk'
+import { getGasRecommendation } from '@/lib/gasCheck'
 
 export default function WalletConnect() {
   const [wallet, setWallet] = useState<any>(null)
   const [address, setAddress] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
+  const [recommendation, setRecommendation] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchGasInfo = async () => {
+      try {
+        const rec = await getGasRecommendation()
+        console.log('gas recommendation: ', rec)
+        setRecommendation(rec)
+      } catch (error) {
+        console.error('Failed to fetch gas info:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchGasInfo()
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchGasInfo, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     const coinbaseWallet = new CoinbaseWalletSDK({
@@ -34,7 +56,7 @@ export default function WalletConnect() {
     if (!address) return
     setIsClaiming(true)
     // Implement your airdrop claiming logic here
-    await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulating a delay
+    await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulating a delay
     alert('Airdrop claimed successfully!')
     setIsClaiming(false)
   }
@@ -53,6 +75,7 @@ export default function WalletConnect() {
           <Button onClick={claimAirdrop} disabled={isClaiming} className='w-full'>
             {isClaiming ? 'Claiming...' : 'Claim Airdrop'}
           </Button>
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{recommendation}</pre>
         </div>
       )}
     </div>
