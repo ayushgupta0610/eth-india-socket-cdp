@@ -31,7 +31,7 @@ contract MyTokenWrite is Script {
         // Frontend interface will decide the apt chain for user to claim their airdrop on
         // instead of user trying to figure it out.
 
-        // Based on a specific condition (let's say the cheapest claim possible currently) the selectedMyTokenForwarder instance would be selected
+        // Based on a specific condition (let's say the cheapest claim possible currently) the myTokenForwarder instance would be selected
 
         // vm.startBroadcast(user);
         // gateway.claimAirdrop(selectedMyTokenForwarder);

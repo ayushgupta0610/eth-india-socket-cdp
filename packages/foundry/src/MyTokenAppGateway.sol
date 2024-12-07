@@ -29,7 +29,4 @@ contract MyTokenAppGateway is AppGatewayBase, Ownable {
         airdropReceivers[msg.sender] = 0;
         MyToken(_instance).mint(msg.sender, amount); // _instance - this is the forwarder address (MyToken instance deployed on a specific chainSlug)
     }
-
-    // Your read operations from the MyToken will go here. Based on the chain's read data value, only the most optimal value can be returned
-    // or all the various return values of the read operation from various chains and then the user can decide on which chain he/she would like to execute the write operation
 }
