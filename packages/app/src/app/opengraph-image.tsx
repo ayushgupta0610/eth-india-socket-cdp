@@ -19,7 +19,7 @@ export default async function Image() {
         <h1 tw='text-8xl'>Ayush Gupta - ETHIndia 2024</h1>
         <h2 tw='text-4xl'>Ayush Gupta - ETHIndia 2024</h2>
         <div tw='flex flex-col items-center justify-center mt-8'>
-          <div tw='text-xl'>Ayush Gupta's ETHIndia 2024 submission</div>
+          <div tw='text-xl'>Ayush Gupta - ETHIndia 2024 submission</div>
           <div tw='text-xl mt-2'>Socket · CDP SDK · Base · Polygon</div>
         </div>
       </div>

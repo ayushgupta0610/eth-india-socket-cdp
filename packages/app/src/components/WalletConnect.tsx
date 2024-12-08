@@ -20,6 +20,17 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
   const [gasText, setGasText] = useState<string>('')
   const [recommendation, setRecommendation] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [claimingStates, setClaimingStates] = useState({
+    baseSepolia: false,
+    optimismSepolia: false,
+    arbitrumSepolia: false,
+  })
+
+  const CHAIN_EXPLORERS = {
+    baseSepolia: 'https://sepolia.basescan.org',
+    optimismSepolia: 'https://sepolia-optimism.etherscan.io',
+    arbitrumSepolia: 'https://sepolia.arbiscan.io',
+  }
 
   useEffect(() => {
     const fetchGasInfo = async () => {
@@ -84,10 +95,19 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
 
   const claimAirdrop = async (chain: string) => {
     if (!address) return
-    setIsClaiming(true)
+
+    // Update specific chain claiming state
+    setClaimingStates((prev) => ({
+      ...prev,
+      [chain]: true,
+    }))
 
     try {
-      const ethereum = wallet.makeWeb3Provider()
+      // Only proceed with network switching for MetaMask
+      const ethereum = (window as any).ethereum
+      if (!ethereum?.isMetaMask) {
+        throw new Error('Please use MetaMask for this transaction')
+      }
 
       // Socket composer testnet configuration
       const socketChain = {
@@ -112,6 +132,37 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
         },
       }
 
+      // Switch network only for MetaMask
+      try {
+        await ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: `0x${socketChain.id.toString(16)}` }],
+        })
+      } catch (switchError: any) {
+        if (switchError.code === 4902) {
+          await ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: `0x${socketChain.id.toString(16)}`,
+                chainName: socketChain.name,
+                nativeCurrency: socketChain.nativeCurrency,
+                rpcUrls: socketChain.rpcUrls.default.http,
+                blockExplorerUrls: [socketChain.blockExplorers.default.url],
+              },
+            ],
+          })
+        } else {
+          throw switchError
+        }
+      }
+
+      const walletClient = createWalletClient({
+        account: address as `0x${string}`,
+        chain: socketChain,
+        transport: custom(ethereum),
+      })
+
       // Token forwarder addresses for each chain
       const tokenGateway = '0x42500d1Ea986a5B636349Ec6B01e593348885EaE'
       const forwarderAddresses = {
@@ -123,36 +174,25 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
       const forwarderAddress = forwarderAddresses[chain as keyof typeof forwarderAddresses]
       if (!forwarderAddress) throw new Error('Invalid chain selected')
 
-      // Create wallet client for Socket composer testnet
-      const walletClient = createWalletClient({
-        account: wallet,
-        chain: socketChain,
-        transport: custom(ethereum),
-      })
-
-      // Create public client for Socket composer testnet
-      const publicClient = createPublicClient({
-        chain: socketChain,
-        transport: http(socketChain.rpcUrls.default.http[0]),
-      })
-
-      const contract = await getContract({
+      const contract = getContract({
         address: tokenGateway as `0x${string}`,
         abi: claimAirdropAbi,
-        client: { public: publicClient, wallet: walletClient },
+        client: { public: walletClient, wallet: walletClient },
       })
 
       const hash = await contract.write.claimAirdrop([forwarderAddress as `0x${string}`], {
         account: address as `0x${string}`,
+        chain: socketChain,
       })
-      const receipt = await publicClient.waitForTransactionReceipt({ hash })
-      console.log('receipt: ', receipt)
+      // const receipt = await walletClient.waitForTransactionReceipt({ hash })
+      // console.log('receipt: ', receipt)
 
       const newTransaction: Transaction = {
         id: hash,
-        chain: chain, // The target chain name
+        chain: chain,
         description: `Airdrop Claim on ${chain}`,
         txHash: hash,
+        explorerUrl: `${CHAIN_EXPLORERS[chain as keyof typeof CHAIN_EXPLORERS]}/tx/${hash}`,
       }
 
       addTransaction(newTransaction)
@@ -160,18 +200,19 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
       console.error('Failed to claim airdrop:', error)
       throw error
     } finally {
-      setIsClaiming(false)
+      // Reset specific chain claiming state
+      setClaimingStates((prev) => ({
+        ...prev,
+        [chain]: false,
+      }))
     }
   }
 
   return (
     <div className='space-y-6'>
       {!address ? (
-        <div className='flex flex-col sm:flex-row sm:space-x-4'>
-          <Button onClick={() => connectWallet('coinbase')} disabled={isConnecting} className='w-full sm:w-1/2'>
-            {isConnecting ? 'Connecting...' : 'Connect Coinbase Wallet'}
-          </Button>
-          <Button onClick={() => connectWallet('metamask')} disabled={isConnecting} className='w-full sm:w-1/2'>
+        <div className='w-full'>
+          <Button onClick={() => connectWallet('metamask')} disabled={isConnecting} className='w-full'>
             {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
           </Button>
         </div>
@@ -188,17 +229,23 @@ export default function WalletConnect({ addTransaction }: WalletConnectProps) {
             </a>
           </p>
           <div className='flex flex-wrap justify-between'>
-            {/* <Button onClick={disconnectWallet} variant='outline' className='w-full sm:w-auto'>
-              Disconnect
-            </Button> */}
-            <Button onClick={() => claimAirdrop('baseSepolia')} disabled={isClaiming} className='w-full sm:w-auto'>
-              {isClaiming ? 'Claiming...' : `Claim on Base`}
+            <Button
+              onClick={() => claimAirdrop('baseSepolia')}
+              disabled={Object.values(claimingStates).some(Boolean)}
+              className='w-full sm:w-auto'>
+              {claimingStates.baseSepolia ? 'Claiming...' : 'Claim on Base'}
             </Button>
-            <Button onClick={() => claimAirdrop('optimismSepolia')} disabled={isClaiming} className='w-full sm:w-auto'>
-              {isClaiming ? 'Claiming...' : 'Claim on Optimism'}
+            <Button
+              onClick={() => claimAirdrop('optimismSepolia')}
+              disabled={Object.values(claimingStates).some(Boolean)}
+              className='w-full sm:w-auto'>
+              {claimingStates.optimismSepolia ? 'Claiming...' : 'Claim on Optimism'}
             </Button>
-            <Button onClick={() => claimAirdrop('arbitrumSepolia')} disabled={isClaiming} className='w-full sm:w-auto'>
-              {isClaiming ? 'Claiming...' : 'Claim on Arbitrum'}
+            <Button
+              onClick={() => claimAirdrop('arbitrumSepolia')}
+              disabled={Object.values(claimingStates).some(Boolean)}
+              className='w-full sm:w-auto'>
+              {claimingStates.arbitrumSepolia ? 'Claiming...' : 'Claim on Arbitrum'}
             </Button>
           </div>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{gasText}</pre>

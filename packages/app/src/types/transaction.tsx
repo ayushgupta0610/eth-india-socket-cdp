@@ -3,4 +3,5 @@ export interface Transaction {
   chain: string
   description: string
   txHash: string
+  explorerUrl: string
 }

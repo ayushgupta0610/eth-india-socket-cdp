@@ -5,6 +5,34 @@ interface TransactionTableProps {
   transactions: Transaction[]
 }
 
+const formatChainName = (chain: string): string => {
+  switch (chain.toLowerCase()) {
+    case 'basesepolia':
+      return 'Base Sepolia'
+    case 'arbitrumsepolia':
+      return 'Arbitrum Sepolia'
+    case 'optimismsepolia':
+      return 'Optimism Sepolia'
+    default:
+      return chain
+  }
+}
+
+const formatDescription = (description: string): string => {
+  return description.replace(/(baseSepolia|arbitrumSepolia|optimismSepolia)/g, (match) => {
+    switch (match.toLowerCase()) {
+      case 'basesepolia':
+        return 'Base Sepolia'
+      case 'arbitrumsepolia':
+        return 'Arbitrum Sepolia'
+      case 'optimismsepolia':
+        return 'Optimism Sepolia'
+      default:
+        return match
+    }
+  })
+}
+
 export default function TransactionTable({ transactions }: TransactionTableProps) {
   return (
     <div className='bg-white rounded-xl shadow-2xl p-8'>
@@ -21,11 +49,11 @@ export default function TransactionTable({ transactions }: TransactionTableProps
           <TableBody>
             {transactions.map((tx) => (
               <TableRow key={tx.id}>
-                <TableCell>{tx.chain}</TableCell>
-                <TableCell>{tx.description}</TableCell>
+                <TableCell>{formatChainName(tx.chain)}</TableCell>
+                <TableCell>{formatDescription(tx.description)}</TableCell>
                 <TableCell>
                   <a
-                    href={`https://etherscan.io/tx/${tx.txHash}`}
+                    href={`https://explorer-socket-composer-testnet.t.conduit.xyz/tx/${tx.txHash}`}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='text-blue-600 hover:underline'>
