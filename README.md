@@ -1,8 +1,10 @@
-## ETHIndia 2024 Chain Abstraction using Socket
+## ETHIndia 2024 - Chain Abstracted Airdrop using Socket
 
 A simple poc to showcase chain abstracted airdrop where user can claim their ERC20 token airdrop on any chain (Base, Arbitrum and Optimism Sepolia). Also, the user can't game the system by executing the claim transactions across chains and claiming multiple times.
 
 The app is live at: https://eth-india-socket-cdp-app.vercel.app/
+
+Note: You'd need to get your address whitelisted to be able to claim your airdrop. Kindly contact me on [X](https://x.com/ayushgupta0610) for the same.
 
 ## Contract Addresses
 
