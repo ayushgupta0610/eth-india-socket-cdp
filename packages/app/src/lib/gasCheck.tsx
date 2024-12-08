@@ -29,11 +29,23 @@ export const checkOptimalGasChain = async (): Promise<{
 
   try {
     // Fetch base fee for each chain
-    const [optimismFee, baseFee, arbitrumFee] = await Promise.all([
+    let [optimismFee, baseFee, arbitrumFee] = await Promise.all([
       clients.optimism.getBlock({ blockTag: 'latest' }).then((block) => block.baseFeePerGas!),
       clients.base.getBlock({ blockTag: 'latest' }).then((block) => block.baseFeePerGas!),
       clients.arbitrum.getBlock({ blockTag: 'latest' }).then((block) => block.baseFeePerGas!),
     ])
+
+    // Base Sepolia wins in gas war
+    // optimismFee = BigInt(optimismFee) * BigInt(1000000)
+    // arbitrumFee = BigInt(arbitrumFee) * BigInt(1000000)
+
+    // Arbitrum wins in gas war
+    // optimismFee = BigInt(optimismFee) * BigInt(1000000)
+    // baseFee = BigInt(baseFee) * BigInt(1000000)
+
+    // Optimism wins in gas war
+    // arbitrumFee = BigInt(arbitrumFee) * BigInt(1000000)
+    // baseFee = BigInt(baseFee) * BigInt(1000000)
 
     const gasPrices: GasPrice[] = [
       { chain: optimismSepolia, baseFee: optimismFee, formattedPrice: formatGwei(optimismFee) },
@@ -53,9 +65,8 @@ export const checkOptimalGasChain = async (): Promise<{
     throw error
   }
 }
-
 // Helper function to get a human-readable recommendation
-export const getGasRecommendation = async (): Promise<string> => {
+export const getGasRecommendation = async (): Promise<{ name: string; recommendation: string }> => {
   const { optimalChain, gasPrices } = await checkOptimalGasChain()
 
   const recommendation = `
@@ -65,5 +76,5 @@ export const getGasRecommendation = async (): Promise<string> => {
     ${gasPrices.map(({ chain, formattedPrice }) => `${chain.name}: ${formattedPrice} Gwei`).join('\n    ')}
   `
 
-  return recommendation
+  return { name: optimalChain.name, recommendation }
 }

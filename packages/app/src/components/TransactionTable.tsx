@@ -1,34 +1,11 @@
-'use client'
-
-import { useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Transaction } from '@/types/transaction'
 
-interface Transaction {
-  id: string
-  chain: string
-  description: string
-  txHash: string
+interface TransactionTableProps {
+  transactions: Transaction[]
 }
 
-export default function TransactionTable() {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-
-  // This function would be called when a transaction is made
-  const addTransaction = (chain: string, description: string, txHash: string) => {
-    const newTransaction: Transaction = {
-      id: Date.now().toString(),
-      chain,
-      description,
-      txHash,
-    }
-    setTransactions((prev) => [newTransaction, ...prev])
-  }
-
-  // For demonstration purposes, let's add a sample transaction
-  if (transactions.length === 0) {
-    addTransaction('Ethereum', 'Airdrop Claim', '0x123...abc')
-  }
-
+export default function TransactionTable({ transactions }: TransactionTableProps) {
   return (
     <div className='bg-white rounded-xl shadow-2xl p-8'>
       <h2 className='text-2xl font-bold mb-4 text-gray-800'>Transaction History</h2>
